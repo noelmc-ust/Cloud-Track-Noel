@@ -1,34 +1,34 @@
 variable "resource_group_name" {
-  type        = string
-  default     = "flowforge-enterprise-rg"
+  type    = string
+  default = "flowforge-prod-rg"
 }
 
 variable "location" {
-  type        = string
-  default     = "East US"
+  type    = string
+  default = "East US"
 }
 
 variable "vnet_cidr" {
-  type        = list(string)
-  default     = ["10.0.0.0/16"]
+  type    = list(string)
+  default = ["10.1.0.0/16"] # Changed VNet CIDR for Prod separation
 }
 
 variable "admin_username" {
-  type        = string
-  default     = "azureuser"
+  type    = string
+  default = "azureprodadmin"
 }
 
 variable "admin_password" {
-  type        = string
-  sensitive   = true
+  type      = string
+  sensitive = true
 }
 
 variable "pfx_certificate_path" {
   type        = string
-  description = "Absolute or relative path to your flowforge-ssl.pfx file"
+  description = "Path to the production certificate"
 }
 
 variable "pfx_certificate_password" {
-  type        = string
-  sensitive   = true
+  type      = string
+  sensitive = true
 }

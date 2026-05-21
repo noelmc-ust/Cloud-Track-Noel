@@ -16,14 +16,12 @@ resource "azurerm_resource_group" "rg" {
   location = var.location
 }
 
-
 module "networking" {
   source              = "../../modules/network"
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
   vnet_cidr           = var.vnet_cidr
 }
-
 
 module "compute" {
   source              = "../../modules/compute"
@@ -34,7 +32,6 @@ module "compute" {
   admin_username      = var.admin_username
   admin_password      = var.admin_password
 }
-
 
 module "app_gateway" {
   source                   = "../../modules/gateway"

@@ -6,14 +6,37 @@ resource "azurerm_public_ip" "appgw_pip" {
   sku                 = "Standard"
 }
 
+
+resource "azurerm_web_application_firewall_policy" "waf_policy" {
+  name                = "production-waf-policy"
+  resource_group_name = var.resource_group_name
+  location            = var.location
+
+  policy_settings {
+    enabled          = true
+    mode             = "Prevention" 
+    request_body_check = true
+    max_request_body_size_in_kb = 128
+    file_upload_limit_in_mb     = 100
+  }
+
+  managed_rules {
+    managed_rule_set {
+      type    = "OWASP"
+      version = "3.2" 
+    }
+  }
+}
+
 resource "azurerm_application_gateway" "gw" {
   name                = "production-appgw"
   resource_group_name = var.resource_group_name
   location            = var.location
 
+
   sku {
-    name     = "Standard_v2"
-    tier     = "Standard_v2"
+    name     = "WAF_v2"
+    tier     = "WAF_v2"
     capacity = 2
   }
 
@@ -32,13 +55,13 @@ resource "azurerm_application_gateway" "gw" {
     public_ip_address_id = azurerm_public_ip.appgw_pip.id
   }
 
-
   ssl_certificate {
     name     = "flowforge-multi-domain-cert"
     data     = filebase64(var.pfx_certificate_path)
     password = var.pfx_certificate_password
   }
 
+  firewall_policy_id = azurerm_web_application_firewall_policy.waf_policy.id
 
   backend_address_pool {
     name         = "fitness-pool"
@@ -51,7 +74,7 @@ resource "azurerm_application_gateway" "gw" {
   }
 
   backend_http_settings {
-    name                  = "http-settigs"
+    name                  = "http-settings-port80"
     cookie_based_affinity = "Disabled"
     port                  = 80
     protocol              = "Http"
@@ -59,7 +82,7 @@ resource "azurerm_application_gateway" "gw" {
   }
 
   http_listener {
-    name                           = "fitness-https"
+    name                           = "fitness-https-listener"
     frontend_ip_configuration_name = "frontend-ip-config"
     frontend_port_name             = "port-443"
     protocol                       = "Https"
@@ -68,7 +91,7 @@ resource "azurerm_application_gateway" "gw" {
   }
 
   http_listener {
-    name                           = "ghee-https"
+    name                           = "ghee-https-listener"
     frontend_ip_configuration_name = "frontend-ip-config"
     frontend_port_name             = "port-443"
     protocol                       = "Https"
@@ -76,22 +99,21 @@ resource "azurerm_application_gateway" "gw" {
     host_name                      = "ghee.flowforge.fun"
   }
 
-
   request_routing_rule {
     name                       = "fitness-route"
     rule_type                  = "Basic"
-    http_listener_name         = "fitness-https"
+    http_listener_name         = "fitness-https-listener"
     backend_address_pool_name  = "fitness-pool"
-    backend_http_settings_name = "http-settings"
+    backend_http_settings_name = "http-settings-port80"
     priority                   = 10
   }
 
   request_routing_rule {
     name                       = "ghee-route"
     rule_type                  = "Basic"
-    http_listener_name         = "ghee-https"
+    http_listener_name         = "ghee-https-listener"
     backend_address_pool_name  = "ghee-pool"
-    backend_http_settings_name = "http-settings"
+    backend_http_settings_name = "http-settings-port80"
     priority                   = 20
   }
 }
