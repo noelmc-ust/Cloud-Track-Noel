@@ -1,6 +1,6 @@
-# App Gateway Terraform Infrastructure
+# Application-Gateway (Domain-Based Routing)
 
-Enterprise-grade Azure infrastructure using Terraform. Zero-direct-internet architecture with Layer-7 routing.
+Implementation of Application Gateway and related Azure infrastructure using Terraform. Zero-direct-internet architecture with Layer-7 routing and Web Application Firewall.
 
 ## Architecture Diagram
 ![System Architecture](./Architecture.png)
@@ -16,6 +16,26 @@ Enterprise-grade Azure infrastructure using Terraform. Zero-direct-internet arch
 - **Modularity**: Shared modules in `modules/` (`network`, `compute`, `gateway`).
 - **Variable Passing**: Environment-specific inputs via `terraform.tfvars`. 
 - **Secrets Management**: Sensitive values (passwords, certificates) injected via `.tfvars` file per environment.
+
+## Repository Structure
+```text
+App-Gateway-TerraForm/
+├── Architecture.png             
+├── README.md                   
+├── env/                         # Enviornments
+│   ├── dev/                     # Development environment configurations
+│   │   ├── main.tf              # Dev Env Execution File
+│   │   ├── variables.tf         # Dev environment Variables
+│   │   └── terraform.tfvars     # Value Passing 
+│   └── prod/                    # Production Configurations
+├── modules/                     # Terraform Modules
+│   ├── compute/                 # Deploys private VMs and bootstraps web servers
+│   ├── gateway/                 # Application Gateway layer-7 multi-site logic
+│   └── network/                 # Sets up VNet, subnets, NSGs, NAT Gateway, Bastion
+└── scripts/                   
+    ├── appsetup.txt             # Bootstrap Scrip Fitness App
+    └── setup.txt                # Bootstrap Scrip Ghee App
+```
 
 ## Traffic Flow & Routing
 - **Ingress**: TCP/443 (HTTPS) to App Gateway Public IP.
