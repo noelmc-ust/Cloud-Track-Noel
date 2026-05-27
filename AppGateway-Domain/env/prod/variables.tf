@@ -10,7 +10,7 @@ variable "location" {
 
 variable "vnet_cidr" {
   type    = list(string)
-  default = ["10.1.0.0/16"] # Changed VNet CIDR for Prod separation
+  default = ["10.1.0.0/16"]
 }
 
 variable "admin_username" {
