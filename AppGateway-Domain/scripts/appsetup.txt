@@ -1,0 +1,57 @@
+#!/bin/bash
+sudo apt-get update
+sudo apt-get install -y curl gnupg build-essential nginx git
+
+sudo curl -fsSL https://deb.nodesource.com/setup_20.x | sudo bash -
+sudo apt-get install -y nodejs
+cd /var/www/html
+sudo rm -rf /var/www/html/Fitness_Tracker  # Avoid git clone collision if directory exists
+sudo git clone https://github.com/noelmc-ust/Fitness_Tracker
+sudo chmod -R 755 /var/www/html/Fitness_Tracker
+sudo rm -f /var/www/html/index.nginx-debian.html
+cd /var/www/html/Fitness_Tracker/server
+npm install
+sudo npm install -g pm2
+sudo tee /etc/nginx/sites-available/default > /dev/null << 'EOF'
+server {
+    listen 80;
+    server_name _;
+
+    root /var/www/html/Fitness_Tracker/public;
+    index pages/index.html;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    location /api/ {
+        proxy_pass http://localhost:5000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+EOF
+sudo nginx -t
+sudo systemctl restart nginx
+sudo apt-get install -y gnupg curl
+curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | sudo gpg --o /usr/share/keyrings/mongodb-server-7.0.gpg --dearmor --yes
+echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+
+sudo apt-get update -y
+sudo apt-get install -y mongodb-org
+
+# 7. Configure and Start MongoDB
+sudo sed -i 's/bindIp: 127.0.0.1/bindIp: 0.0.0.0/' /etc/mongod.conf
+sudo systemctl start mongod
+sudo systemctl enable mongod
+
+# 8. Launch Application via PM2 using local loopback URI
+cd /var/www/html/Fitness_Tracker/server
+MONGODB_URI="mongodb://localhost:27017/fitness-tracker" pm2 start app.js --name "fitness-app"
+pm2 save
+
+# 9. Configure PM2 process manager service to persist through VM reboots
+sudo env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u noelmc9812 --hp /home/noelmc9812
